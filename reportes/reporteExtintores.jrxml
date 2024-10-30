@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="report name" pageWidth="841" pageHeight="595" orientation="Landscape" columnWidth="801" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="713e250f-85b4-436e-8f16-4ea3baedfea8">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="nombre" class="java.lang.String">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="dias" class="java.lang.String">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[select identificador,concat(pa.Nombre," ",pa.codigo) as ubicacion,date_format(e.fechaVencimiento,'%d.%m.%Y') as fecha,
+datediff(fechaVencimiento,now()) as dias
+ from extintores_tbl e
+ left join patios_tbl pa ON pa.patioId = e.yardaId
+ where e.estatus = 1 and datediff(fechaVencimiento,now()) < $P{dias}
+ and pa.Nombre like $P{nombre} and pa.codigo like $P{nombre} and identificador like $P{nombre}]]>
+	</queryString>
+	<field name="identificador" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="ubicacion" class="java.lang.String"/>
+	<field name="fecha" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="dias" class="java.lang.Integer">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="161" splitType="Stretch">
+			<image>
+				<reportElement x="0" y="0" width="285" height="100" uuid="1f4cd004-89c3-46e7-a043-696687ee3dee"/>
+				<imageExpression><![CDATA["images\\logoreport.jpg"]]></imageExpression>
+			</image>
+			<staticText>
+				<reportElement x="295" y="3" width="428" height="30" uuid="79a457d4-e004-4841-b944-32ed22393034"/>
+				<textElement textAlignment="Center">
+					<font size="16" isBold="true"/>
+				</textElement>
+				<text><![CDATA[REPORTE VENCIMIENTOS DE EXTINTORES]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="407" y="33" width="185" height="24" uuid="86384de1-ef0d-4b30-a738-cef51a14a869"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Transportes Rios]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="374" y="57" width="244" height="20" uuid="29ec2edd-a6db-4f93-8369-d415c5bd61c5"/>
+				<text><![CDATA[San Felipe 742, Los Santos 22114 Tijuana, B.C]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="657" y="40" width="69" height="17" uuid="9bd1d115-8770-401e-a497-00dbfd5b47ee"/>
+				<textElement>
+					<font size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Fecha:]]></text>
+			</staticText>
+			<textField pattern="MM/dd/yyyy">
+				<reportElement x="696" y="37" width="100" height="20" uuid="372e31d0-4b5d-4374-b22a-00487df79ac3"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<columnHeader>
+		<band height="20" splitType="Stretch">
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="0" width="272" height="20" forecolor="#FFFFFF" backcolor="#000000" uuid="a56837a2-9e0b-49de-bd67-30e581140d49"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[EXTINTOR]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="272" y="0" width="302" height="20" forecolor="#FFFFFF" backcolor="#000000" uuid="36044500-da55-456f-8690-6078e7a21e23"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[UBICACION]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="574" y="0" width="163" height="20" forecolor="#FFFFFF" backcolor="#000000" uuid="eac078c4-3947-47e5-bcd1-7bef0c4246d3"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[FECHA VENCIMIENTO]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="737" y="0" width="65" height="20" forecolor="#FFFFFF" backcolor="#000000" uuid="174113b6-e265-4363-b030-7062c2d88e2d"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[DIAS]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="20" splitType="Stretch">
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement stretchType="RelativeToTallestObject" x="0" y="0" width="272" height="20" isPrintWhenDetailOverflows="true" uuid="2a47b09e-dd75-4ab7-9285-dbd081e53ada"/>
+				<box leftPadding="3">
+					<pen lineWidth="1.0"/>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font size="12"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{identificador}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement stretchType="RelativeToTallestObject" x="272" y="0" width="302" height="20" isPrintWhenDetailOverflows="true" uuid="956f244d-d202-478e-a825-e79c2985a130"/>
+				<box leftPadding="3">
+					<pen lineWidth="1.0"/>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font size="12"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{ubicacion}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement stretchType="RelativeToTallestObject" x="574" y="0" width="179" height="20" isPrintWhenDetailOverflows="true" uuid="ead4f4e3-d69b-45cc-b6fe-6dcc4a0d3481"/>
+				<box leftPadding="3">
+					<pen lineWidth="1.0"/>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font size="12"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{fecha}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement stretchType="RelativeToTallestObject" x="753" y="0" width="47" height="20" isPrintWhenDetailOverflows="true" uuid="e68e3c6e-21f9-43a3-86d8-c43abc868067"/>
+				<box leftPadding="3">
+					<pen lineWidth="1.0"/>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font size="12"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{dias}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<summary>
+		<band height="61" splitType="Stretch"/>
+	</summary>
+</jasperReport>

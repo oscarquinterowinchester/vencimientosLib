@@ -413,8 +413,6 @@ public class VencimientosV3 extends javax.swing.JFrame {
         tablemodel3.addColumn("Placas MEX");
         tablemodel3.addColumn("Placas USA");
 
-        jTable3.setModel(tablemodel3);
-
         cargarColumnasUnidad(); // Validar esta parte para cuando no haya registros.
         jTable2.setModel(tablemodel2);
 
@@ -423,7 +421,6 @@ public class VencimientosV3 extends javax.swing.JFrame {
 
         jTable1.setDefaultRenderer(Object.class, new MiRenderVencimientos());
         jTable2.setDefaultRenderer(Object.class, new MiRenderVencimientos());
-        jTable3.setDefaultRenderer(Object.class, new MiRenderVencimientos());
         jTable4.setDefaultRenderer(Object.class, new MiRenderVencimientos());
         tablaAyuntamiento.setDefaultRenderer(Object.class, new MiRenderVencimientos());
         jTable5.setDefaultRenderer(Object.class, new MiRenderVencimientosCamOp(2));
@@ -686,23 +683,29 @@ public class VencimientosV3 extends javax.swing.JFrame {
         cargarListaVencimientosYardaCombo();
         cargarVencimientosPlantillasUnidad();
         doneLoad = true;
-
-        jPanel5.setVisible(false);
-
-        panelYardas.setVisible(Permisos.esVentanaYardaVisible());
-
-        panelExtintores.setVisible(Permisos.esVentanaExtintoresVisible());
-
-        boolean ocultarCorreos = (Permisos.estaCorreosDisponible() == false);
-
-        if (ocultarCorreos) {
-            jButton3.setVisible(false);
-            jButton4.setVisible(false);
-        }
-        
-        jPanel5.setVisible(false);
+//        ejecutarPermisos();
+//
+//        panelYardas.setVisible(Permisos.esVentanaYardaVisible());
+//
+//        panelExtintores.setVisible(Permisos.esVentanaExtintoresVisible());
 
     }
+//    private void ejecutarPermisos(){
+//        try{
+//           boolean ocultarCorreos = (Permisos.estaCorreosDisponible() == false);
+//
+//        if (ocultarCorreos) {
+//            esconderElementosPermisos();
+//        } 
+//        }catch(Exception e){
+//            System.out.println("Fallo en ejecutar permisos:"+ e);
+//            esconderElementosPermisos();
+//        }
+//    }
+//    private void esconderElementosPermisos(){
+//       jButton3.setVisible(false);
+//            jButton4.setVisible(false); 
+//    }
 
     private void tableListenertvencimientosunidad(javax.swing.event.TableModelEvent e) {
 
@@ -718,8 +721,8 @@ public class VencimientosV3 extends javax.swing.JFrame {
                         if (comboVencimientoUnidad.getSelectedIndex() >= 0) {
                             vencimientoIdComboUnidad.set(row, vencimientoIdComboUnidad.get(comboVencimientoUnidad.getSelectedIndex()));
                         }
-
-                        boolean esVencimientoDuplicado = !(utils.dbConsult("select ifnull(ID,'') from choferes_vencimientos_camiones where vencimientoID = " + vencimientoIdComboUnidad.get(row) + " and choferId = " + SelectedCamion + " and deleted is null").isEmpty());
+                        int indexComboVencimiento = comboVencimientoUnidad.getSelectedIndex();
+                        boolean esVencimientoDuplicado = !(utils.dbConsult("select ifnull(ID,'') from choferes_vencimientos_camiones where vencimientoID = " + vencimientoIdComboUnidad.get(indexComboVencimiento) + " and choferId = " + SelectedCamion + " and deleted is null").isEmpty());
                         boolean noEsModificable = utils.dbConsult("select IFNULL(vencimientoFijo,'0')  from vencimientos_Camiones where ID = (select vencimientoId from choferes_vencimientos_camiones where ID = " + vencimientoscamionId.get(row) + " limit 1) ").equals("1");
 
                         if (esVencimientoDuplicado) {
@@ -734,7 +737,7 @@ public class VencimientosV3 extends javax.swing.JFrame {
                             return;
                         }
 
-                        utils.dbUpdate("Update choferes_vencimientos_camiones set vencimientoID='" + vencimientoIdComboUnidad.get(row) + "' where ID='" + vencimientoscamionId.get(row) + "'");
+                        utils.dbUpdate("Update choferes_vencimientos_camiones set vencimientoID='" + vencimientoIdComboUnidad.get(indexComboVencimiento) + "' where ID='" + vencimientoscamionId.get(row) + "'");
 
                     }
 
@@ -749,7 +752,7 @@ public class VencimientosV3 extends javax.swing.JFrame {
                         String campoBDVencimiento = utils.dbConsult("select IFNULL(campoBd,'')  from vencimientos_Camiones where vencimientoFijo is true and ID = (select vencimientoId from choferes_vencimientos_camiones where ID = " + vencimientoscamionId.get(row) + " limit 1)");
 
                         utils.dbUpdate("Update choferes_vencimientos_camiones set fecha='" + fechaVencimiento + "' where ID='" + registroId + "'");
-
+                        registrarLog(fechaVencimiento,registroId);
                         if (esVencimientoFijo) {
                             utils.dbUpdate("update camiones_tbl set " + campoBDVencimiento + " = '" + fechaVencimiento + "' where CamionId = " + SelectedCamion + " ");
                         }
@@ -763,6 +766,23 @@ public class VencimientosV3 extends javax.swing.JFrame {
                 cont = 0;
             }
         }
+    }
+
+    private void registrarLog(String valor, String registroId) {
+
+        String logDesdeVencimientos = "2";
+        String usuarioModificando = String.valueOf(global.usuario);
+        String unidadModificada = utils.dbConsult("SELECT IFNULL(choferID,0) FROM choferes_vencimientos_camiones where ID = " + registroId);
+        String vencimientoDesc = utils.dbConsult("SELECT IFNULL(vencimiento,'') FROM choferes_vencimientos_camiones cvc\n"
+                + "left join vencimientos_camiones vc ON vc.ID = cvc.vencimientoID\n"
+                + "where cvc.ID = "+registroId+" limit 1; ");
+
+        if (unidadModificada.isEmpty()) {
+            return;
+        }
+
+        utils.dbConsult("SELECT insertVencimientoLog('" + valor + " - "+vencimientoDesc+"'," + usuarioModificando + "," + unidadModificada + "," + logDesdeVencimientos + ");");
+
     }
 
     void cargarListaVencimientosComboUnidad() {
@@ -962,10 +982,11 @@ public class VencimientosV3 extends javax.swing.JFrame {
 
                     if (col == 0) {
                         if (comboVencimientoChofer.getSelectedIndex() >= 0) {
-                            vencimientoIdComboChofer.set(row, vencimientoIdComboChofer.get(comboVencimientoChofer.getSelectedIndex()));
-                            String permisoYaAsignado = utils.dbConsult("select IFNULL(ID,'') from choferes_vencimientos where choferID = " + SelectedChofer + " and vencimientoID=" + vencimientoIdComboChofer.get(row) + " and deleted is null");
+//                            vencimientoIdComboChofer.set(row, vencimientoIdComboChofer.get(comboVencimientoChofer.getSelectedIndex()));
+                            int indexComboVencimientos = comboVencimientoChofer.getSelectedIndex();
+                            String permisoYaAsignado = utils.dbConsult("select IFNULL(ID,'') from choferes_vencimientos where choferID = " + SelectedChofer + " and vencimientoID=" + vencimientoIdComboChofer.get(indexComboVencimientos) + " and deleted is null");
                             if (permisoYaAsignado.isEmpty()) {
-                                utils.dbUpdate("Update choferes_vencimientos set vencimientoID='" + vencimientoIdComboChofer.get(row) + "' where ID='" + vencimientoschofer_choferid.get(row) + "'");
+                                utils.dbUpdate("Update choferes_vencimientos set vencimientoID='" + vencimientoIdComboChofer.get(indexComboVencimientos) + "' where ID='" + vencimientoschofer_choferid.get(row) + "'");
 
                             } else {
                                 JOptionPane.showMessageDialog(this, "Vencimiento ya asignado", "Error", JOptionPane.ERROR_MESSAGE);
@@ -1982,8 +2003,8 @@ public class VencimientosV3 extends javax.swing.JFrame {
 
     private void cargarTablaChoferDinamica(String vencFiltroId) {
         String procedimiento = "{call cargarChoferTipoPrueba(?, ?, ?)}";
-        
-        prt("{call cargarChoferTipoPrueba('"+jTextField1.getText()+"', "+vencFiltroId+", "+boxPuesto.getSelectedIndex()+")}");
+
+        prt("{call cargarChoferTipoPrueba('" + jTextField1.getText() + "', " + vencFiltroId + ", " + boxPuesto.getSelectedIndex() + ")}");
         tablemodel.setRowCount(0);
         Connection con = null;
         con = utils.startConnection();
@@ -2366,9 +2387,25 @@ public class VencimientosV3 extends javax.swing.JFrame {
         jButton4 = new javax.swing.JButton();
         jButton2 = new javax.swing.JButton();
         jButton33 = new javax.swing.JButton();
-        jPanel5 = new javax.swing.JPanel();
-        jScrollPane3 = new javax.swing.JScrollPane();
-        jTable3 = new javax.swing.JTable();
+        panelRemolques = new javax.swing.JPanel();
+        jScrollPane12 = new javax.swing.JScrollPane();
+        jTable4 = new javax.swing.JTable();
+        jPanel68 = new javax.swing.JPanel();
+        jPanel69 = new javax.swing.JPanel();
+        jPanel70 = new javax.swing.JPanel();
+        jPanel71 = new javax.swing.JPanel();
+        jLabel29 = new javax.swing.JLabel();
+        remolqueText = new javax.swing.JTextField();
+        jPanel72 = new javax.swing.JPanel();
+        jLabel30 = new javax.swing.JLabel();
+        diasRemolqueTxt = new javax.swing.JTextField();
+        jPanel73 = new javax.swing.JPanel();
+        jLabel31 = new javax.swing.JLabel();
+        boxRemolqueVencimientos = new javax.swing.JComboBox();
+        jButton12 = new javax.swing.JButton();
+        RemolqueIncidenteLabel = new javax.swing.JLabel();
+        jButton14 = new javax.swing.JButton();
+        jButton44 = new javax.swing.JButton();
         panelYardas = new javax.swing.JPanel();
         jScrollPane9 = new javax.swing.JScrollPane();
         tablaAyuntamiento = new javax.swing.JTable();
@@ -2407,25 +2444,6 @@ public class VencimientosV3 extends javax.swing.JFrame {
         jLabel23 = new javax.swing.JLabel();
         diasExt = new javax.swing.JTextField();
         jButton10 = new javax.swing.JButton();
-        panelRemolques = new javax.swing.JPanel();
-        jScrollPane12 = new javax.swing.JScrollPane();
-        jTable4 = new javax.swing.JTable();
-        jPanel68 = new javax.swing.JPanel();
-        jPanel69 = new javax.swing.JPanel();
-        jPanel70 = new javax.swing.JPanel();
-        jPanel71 = new javax.swing.JPanel();
-        jLabel29 = new javax.swing.JLabel();
-        remolqueText = new javax.swing.JTextField();
-        jPanel72 = new javax.swing.JPanel();
-        jLabel30 = new javax.swing.JLabel();
-        diasRemolqueTxt = new javax.swing.JTextField();
-        jPanel73 = new javax.swing.JPanel();
-        jLabel31 = new javax.swing.JLabel();
-        boxRemolqueVencimientos = new javax.swing.JComboBox();
-        jButton12 = new javax.swing.JButton();
-        RemolqueIncidenteLabel = new javax.swing.JLabel();
-        jButton14 = new javax.swing.JButton();
-        jButton44 = new javax.swing.JButton();
         jPanel2 = new javax.swing.JPanel();
         jLabel1 = new javax.swing.JLabel();
 
@@ -3877,10 +3895,10 @@ public class VencimientosV3 extends javax.swing.JFrame {
 
         jTabbedPane1.addTab("Unidades", panelUnidades);
 
-        jPanel5.setLayout(new java.awt.BorderLayout());
+        panelRemolques.setLayout(new java.awt.BorderLayout());
 
-        jTable3.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
-        jTable3.setModel(new javax.swing.table.DefaultTableModel(
+        jTable4.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
+        jTable4.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
                 {null, null, null, null},
                 {null, null, null, null},
@@ -3891,13 +3909,117 @@ public class VencimientosV3 extends javax.swing.JFrame {
                 "Title 1", "Title 2", "Title 3", "Title 4"
             }
         ));
-        jTable3.setFillsViewportHeight(true);
-        jTable3.setRowHeight(25);
-        jScrollPane3.setViewportView(jTable3);
+        jTable4.setFillsViewportHeight(true);
+        jTable4.setRowHeight(25);
+        jTable4.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jTable4MouseClicked(evt);
+            }
+        });
+        jScrollPane12.setViewportView(jTable4);
 
-        jPanel5.add(jScrollPane3, java.awt.BorderLayout.CENTER);
+        panelRemolques.add(jScrollPane12, java.awt.BorderLayout.CENTER);
 
-        jTabbedPane1.addTab("Remolques", jPanel5);
+        jPanel68.setPreferredSize(new java.awt.Dimension(1677, 60));
+        jPanel68.setLayout(new java.awt.BorderLayout());
+
+        jPanel71.setMinimumSize(new java.awt.Dimension(300, 32));
+        jPanel71.setPreferredSize(new java.awt.Dimension(300, 35));
+
+        jLabel29.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabel29.setText("Remolques");
+        jLabel29.setPreferredSize(new java.awt.Dimension(90, 14));
+        jPanel71.add(jLabel29);
+
+        remolqueText.setPreferredSize(new java.awt.Dimension(200, 25));
+        remolqueText.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                remolqueTextKeyPressed(evt);
+            }
+        });
+        jPanel71.add(remolqueText);
+
+        jPanel70.add(jPanel71);
+
+        jPanel72.setPreferredSize(new java.awt.Dimension(100, 40));
+
+        jLabel30.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabel30.setText("Dias");
+        jLabel30.setPreferredSize(new java.awt.Dimension(30, 25));
+        jPanel72.add(jLabel30);
+
+        diasRemolqueTxt.setHorizontalAlignment(javax.swing.JTextField.CENTER);
+        diasRemolqueTxt.setText("1");
+        diasRemolqueTxt.setPreferredSize(new java.awt.Dimension(50, 30));
+        diasRemolqueTxt.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                diasRemolqueTxtKeyPressed(evt);
+            }
+        });
+        jPanel72.add(diasRemolqueTxt);
+
+        jPanel70.add(jPanel72);
+
+        jPanel73.setPreferredSize(new java.awt.Dimension(350, 35));
+
+        jLabel31.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabel31.setText("Vencimiento");
+        jPanel73.add(jLabel31);
+
+        boxRemolqueVencimientos.setPreferredSize(new java.awt.Dimension(200, 25));
+        boxRemolqueVencimientos.addItemListener(new java.awt.event.ItemListener() {
+            public void itemStateChanged(java.awt.event.ItemEvent evt) {
+                boxRemolqueVencimientosItemStateChanged(evt);
+            }
+        });
+        boxRemolqueVencimientos.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                boxRemolqueVencimientosActionPerformed(evt);
+            }
+        });
+        jPanel73.add(boxRemolqueVencimientos);
+
+        jButton12.setText("+");
+        jButton12.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton12ActionPerformed(evt);
+            }
+        });
+        jPanel73.add(jButton12);
+
+        jPanel70.add(jPanel73);
+
+        RemolqueIncidenteLabel.setBackground(new java.awt.Color(204, 204, 204));
+        RemolqueIncidenteLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        RemolqueIncidenteLabel.setOpaque(true);
+        RemolqueIncidenteLabel.setPreferredSize(new java.awt.Dimension(50, 30));
+        jPanel70.add(RemolqueIncidenteLabel);
+
+        jButton14.setText("Documento de vencimientos");
+        jButton14.setPreferredSize(new java.awt.Dimension(207, 30));
+        jButton14.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton14ActionPerformed(evt);
+            }
+        });
+        jPanel70.add(jButton14);
+
+        jButton44.setText("Vencimientos");
+        jButton44.setPreferredSize(new java.awt.Dimension(115, 30));
+        jButton44.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton44ActionPerformed(evt);
+            }
+        });
+        jPanel70.add(jButton44);
+
+        jPanel69.add(jPanel70);
+
+        jPanel68.add(jPanel69, java.awt.BorderLayout.WEST);
+
+        panelRemolques.add(jPanel68, java.awt.BorderLayout.PAGE_START);
+
+        jTabbedPane1.addTab("Remolques", panelRemolques);
 
         panelYardas.setLayout(new java.awt.BorderLayout());
 
@@ -4132,132 +4254,6 @@ public class VencimientosV3 extends javax.swing.JFrame {
 
         jTabbedPane1.addTab("Extintores", panelExtintores);
 
-        panelRemolques.setLayout(new java.awt.BorderLayout());
-
-        jTable4.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
-        jTable4.setModel(new javax.swing.table.DefaultTableModel(
-            new Object [][] {
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null}
-            },
-            new String [] {
-                "Title 1", "Title 2", "Title 3", "Title 4"
-            }
-        ));
-        jTable4.setFillsViewportHeight(true);
-        jTable4.setRowHeight(25);
-        jTable4.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                jTable4MouseClicked(evt);
-            }
-        });
-        jScrollPane12.setViewportView(jTable4);
-
-        panelRemolques.add(jScrollPane12, java.awt.BorderLayout.CENTER);
-
-        jPanel68.setPreferredSize(new java.awt.Dimension(1677, 60));
-        jPanel68.setLayout(new java.awt.BorderLayout());
-
-        jPanel71.setMinimumSize(new java.awt.Dimension(300, 32));
-        jPanel71.setPreferredSize(new java.awt.Dimension(300, 35));
-
-        jLabel29.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel29.setText("Remolques");
-        jLabel29.setPreferredSize(new java.awt.Dimension(90, 14));
-        jPanel71.add(jLabel29);
-
-        remolqueText.setPreferredSize(new java.awt.Dimension(200, 25));
-        remolqueText.addKeyListener(new java.awt.event.KeyAdapter() {
-            public void keyPressed(java.awt.event.KeyEvent evt) {
-                remolqueTextKeyPressed(evt);
-            }
-        });
-        jPanel71.add(remolqueText);
-
-        jPanel70.add(jPanel71);
-
-        jPanel72.setPreferredSize(new java.awt.Dimension(100, 40));
-
-        jLabel30.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel30.setText("Dias");
-        jLabel30.setPreferredSize(new java.awt.Dimension(30, 25));
-        jPanel72.add(jLabel30);
-
-        diasRemolqueTxt.setHorizontalAlignment(javax.swing.JTextField.CENTER);
-        diasRemolqueTxt.setText("1");
-        diasRemolqueTxt.setPreferredSize(new java.awt.Dimension(50, 30));
-        diasRemolqueTxt.addKeyListener(new java.awt.event.KeyAdapter() {
-            public void keyPressed(java.awt.event.KeyEvent evt) {
-                diasRemolqueTxtKeyPressed(evt);
-            }
-        });
-        jPanel72.add(diasRemolqueTxt);
-
-        jPanel70.add(jPanel72);
-
-        jPanel73.setPreferredSize(new java.awt.Dimension(350, 35));
-
-        jLabel31.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel31.setText("Vencimiento");
-        jPanel73.add(jLabel31);
-
-        boxRemolqueVencimientos.setPreferredSize(new java.awt.Dimension(200, 25));
-        boxRemolqueVencimientos.addItemListener(new java.awt.event.ItemListener() {
-            public void itemStateChanged(java.awt.event.ItemEvent evt) {
-                boxRemolqueVencimientosItemStateChanged(evt);
-            }
-        });
-        boxRemolqueVencimientos.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                boxRemolqueVencimientosActionPerformed(evt);
-            }
-        });
-        jPanel73.add(boxRemolqueVencimientos);
-
-        jButton12.setText("+");
-        jButton12.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton12ActionPerformed(evt);
-            }
-        });
-        jPanel73.add(jButton12);
-
-        jPanel70.add(jPanel73);
-
-        RemolqueIncidenteLabel.setBackground(new java.awt.Color(204, 204, 204));
-        RemolqueIncidenteLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        RemolqueIncidenteLabel.setOpaque(true);
-        RemolqueIncidenteLabel.setPreferredSize(new java.awt.Dimension(50, 30));
-        jPanel70.add(RemolqueIncidenteLabel);
-
-        jButton14.setText("Documento de vencimientos");
-        jButton14.setPreferredSize(new java.awt.Dimension(207, 30));
-        jButton14.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton14ActionPerformed(evt);
-            }
-        });
-        jPanel70.add(jButton14);
-
-        jButton44.setText("Vencimientos");
-        jButton44.setPreferredSize(new java.awt.Dimension(115, 30));
-        jButton44.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton44ActionPerformed(evt);
-            }
-        });
-        jPanel70.add(jButton44);
-
-        jPanel69.add(jPanel70);
-
-        jPanel68.add(jPanel69, java.awt.BorderLayout.WEST);
-
-        panelRemolques.add(jPanel68, java.awt.BorderLayout.PAGE_START);
-
-        jTabbedPane1.addTab("Remolques", panelRemolques);
-
         getContentPane().add(jTabbedPane1, java.awt.BorderLayout.CENTER);
 
         jPanel2.setBackground(global.headerscolor);
@@ -4406,7 +4402,9 @@ public class VencimientosV3 extends javax.swing.JFrame {
 
             JRDesignQuery query = new JRDesignQuery();
             query.setText(q);
-            JasperDesign jd = JRXmlLoader.load("C:\\SERVER\\TransportesRiosExpress\\vencimientosUnidades.jrxml");
+            JasperDesign jd;
+            String report = generarRutaReporte() + "vencimientosUnidades.jrxml";
+            jd = JRXmlLoader.load(report);
             jd.setQuery(query);
             Connection con = utils.startConnection();
             JasperReport reporte = (JasperReport) JasperCompileManager.compileReport(jd);//(JasperReport) JRLoader.loadObject(new File("Reporte_Transferencias.jasper"));
@@ -4416,6 +4414,19 @@ public class VencimientosV3 extends javax.swing.JFrame {
             Logger.getLogger(VencimientosV3.class.getName()).log(Level.SEVERE, null, ex);
             JOptionPane.showMessageDialog(this, "Error " + ex + "\n" + ex.getStackTrace()[0], "Error", JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    private String generarRutaReporte() {
+
+        String path = "";
+
+        if (global.db.equals("ltidb")) {
+            path = "C:\\SERVER\\TransportesLTI\\dist\\";
+        }
+
+        prt("BASE DE DATOOS: " + global.db);
+        return path;
+
     }
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
         generarReporteUnidades();
@@ -4600,8 +4611,8 @@ public class VencimientosV3 extends javax.swing.JFrame {
                 System.out.println(q);
                 JRDesignQuery query = new JRDesignQuery();
                 query.setText(q);
-
-                JasperDesign jd = JRXmlLoader.load("C:\\SERVER\\TransportesRiosExpress\\vencimientosUnidadesJefes.jrxml");
+                String reporteName = generarRutaReporte() + "vencimientosUnidadesJefes.jrxml";
+                JasperDesign jd = JRXmlLoader.load(reporteName);
                 jd.setQuery(query);
                 Connection con = utils.startConnection();
                 JasperReport reporte = (JasperReport) JasperCompileManager.compileReport(jd);
@@ -4611,7 +4622,7 @@ public class VencimientosV3 extends javax.swing.JFrame {
 
                 // Export the report to a PDF file
                 JRExporter exporter = new JRPdfExporter();
-                String pdfFilePath = "C:\\SERVER\\TransportesRiosExpress\\dist\\mail\\" + vencimientosNombre.get(cont) + ".pdf";
+                String pdfFilePath = generarRutaReporte() + "mail\\" + vencimientosNombre.get(cont) + ".pdf";
                 exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint);
                 exporter.setParameter(JRExporterParameter.OUTPUT_FILE, new java.io.File(pdfFilePath));
                 exporter.exportReport();
@@ -4643,7 +4654,7 @@ public class VencimientosV3 extends javax.swing.JFrame {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
         ArrayList<String> docs = new ArrayList<>();
-        docs.add("C:\\SERVER\\TransportesRiosExpress\\dist\\CTPAT_Desarrollo.pdf");
+        docs.add(generarRutaReporte() + "CTPAT_Desarrollo.pdf");
         try {
             con = utils.startConnection();
             st = con.createStatement();
@@ -4743,7 +4754,7 @@ public class VencimientosV3 extends javax.swing.JFrame {
                 JRDesignQuery query = new JRDesignQuery();
                 query.setText(q);
 
-                JasperDesign jd = JRXmlLoader.load("C:\\SERVER\\TransportesRiosExpress\\vencimientosUnidadesAdmin.jrxml");
+                JasperDesign jd = JRXmlLoader.load(generarRutaReporte() + "vencimientosUnidadesAdmin.jrxml");
                 jd.setQuery(query);
                 Connection con = utils.startConnection();
                 JasperReport reporte = (JasperReport) JasperCompileManager.compileReport(jd);
@@ -4753,7 +4764,7 @@ public class VencimientosV3 extends javax.swing.JFrame {
 
                 // Export the report to a PDF file
                 JRExporter exporter = new JRPdfExporter();
-                String pdfFilePath = "C:\\SERVER\\TransportesRiosExpress\\dist\\mail\\" + vencimiento + ".pdf";
+                String pdfFilePath = generarRutaReporte() + "mail\\" + vencimiento + ".pdf";
                 exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint);
                 exporter.setParameter(JRExporterParameter.OUTPUT_FILE, new java.io.File(pdfFilePath));
                 exporter.exportReport();
@@ -5192,10 +5203,7 @@ public class VencimientosV3 extends javax.swing.JFrame {
                 muchosVencimientos = "0";
                 vencimientosIdsConcat = "0";
             }
-//            parametros.put("almacenID", "1");
 
-            /*String emp="";
-           if( empresa.getSelectedIndex() > 0 ) emp = "  ";*/
             String q = "select NoEmpleado,choferes_tbl.Nombre, DATE_FORMAT(choferes_vencimientos.fecha,'%d.%m.%Y') as venc,\n"
                     + "(select Nombre from tiposchoferes_tbl where tipoID=tipooperador) as tipox,\n"
                     + "(select vencimiento from vencimientos where ID=choferes_vencimientos.vencimientoID) as venx,\n"
@@ -5215,13 +5223,8 @@ public class VencimientosV3 extends javax.swing.JFrame {
             JRDesignQuery query = new JRDesignQuery();
             query.setText(q);
 
-            //JasperDesign jd = JRXmlLoader.load("src\\constructora\\Reporte_Transferencia.jrxml");
-            /*String source = getClass().getResource("Almacen_Produccion_Filtrado.jrxml").toString();
-            System.out.println(source);*/
-//            JasperDesign jd = JRXmlLoader.load("C:\\SERVER\\TransportesRiosExpress\\dist\\ExcelVencimientoDinamic_V3.jrxml");
-            JasperDesign jd = JRXmlLoader.load("C:\\SERVER\\TransportesRiosExpress\\ExcelVencimientoDinamic_V3.jrxml");
-
-// JasperDesign jd = JRXmlLoader.load("C:\\SERVER\\TransportesRamirez\\dist\\ReporteAlm.jrxml");
+            String report = generarRutaReporte() + "ExcelVencimientoDinamic_V3.jrxml";
+            JasperDesign jd = JRXmlLoader.load(report);
             jd.setQuery(query);
 
             Connection con = utils.startConnection();
@@ -5257,11 +5260,11 @@ public class VencimientosV3 extends javax.swing.JFrame {
             indexVencimientoRemolque = 0;
         }
         if (vencimientoRemolqueId.size() < 1) {
-           vencimientosIdsConcat = "0"; 
+            vencimientosIdsConcat = "0";
         } else {
-           vencimientosIdsConcat =  vencimientoRemolqueId.get(indexVencimientoRemolque);
+            vencimientosIdsConcat = vencimientoRemolqueId.get(indexVencimientoRemolque);
         }
-        
+
         loadRemolqueModel(vencimientosIdsConcat); // Carga el modelo en base a lo que se selecciono
         cargarTablaRemolqueDinamica(procesarVencimientosRemolque(vencimientosIdsConcat));
 
@@ -5382,7 +5385,9 @@ public class VencimientosV3 extends javax.swing.JFrame {
             System.out.println(q);
             JRDesignQuery query = new JRDesignQuery();
             query.setText(q);
-            JasperDesign jd = JRXmlLoader.load("C:\\SERVER\\TransportesRiosExpress\\vencimientosRemolques.jrxml");
+
+            String report = generarRutaReporte() + "vencimientosRemolques.jrxml";
+            JasperDesign jd = JRXmlLoader.load(report);
             jd.setQuery(query);
             Connection con = utils.startConnection();
             JasperReport reporte = (JasperReport) JasperCompileManager.compileReport(jd);//(JasperReport) JRLoader.loadObject(new File("Reporte_Transferencias.jasper"));
@@ -5428,7 +5433,8 @@ public class VencimientosV3 extends javax.swing.JFrame {
             System.out.println(q);
             JRDesignQuery query = new JRDesignQuery();
             query.setText(q);
-            JasperDesign jd = JRXmlLoader.load("C:\\SERVER\\TransportesRiosExpress\\vencimientosRemolques.jrxml");
+            String report = generarRutaReporte() + "vencimientosRemolques.jrxml";
+            JasperDesign jd = JRXmlLoader.load(report);
             jd.setQuery(query);
             Connection con = utils.startConnection();
             JasperReport reporte = (JasperReport) JasperCompileManager.compileReport(jd);//(JasperReport) JRLoader.loadObject(new File("Reporte_Transferencias.jasper"));
@@ -5474,7 +5480,8 @@ public class VencimientosV3 extends javax.swing.JFrame {
             System.out.println(q);
             JRDesignQuery query = new JRDesignQuery();
             query.setText(q);
-            JasperDesign jd = JRXmlLoader.load("C:\\SERVER\\TransportesRiosExpress\\vencimientosUnidades.jrxml");
+            String report = generarRutaReporte() + "vencimientosUnidades.jrxml";
+            JasperDesign jd = JRXmlLoader.load(report);
             jd.setQuery(query);
             Connection con = utils.startConnection();
             JasperReport reporte = (JasperReport) JasperCompileManager.compileReport(jd);//(JasperReport) JRLoader.loadObject(new File("Reporte_Transferencias.jasper"));
@@ -5486,32 +5493,8 @@ public class VencimientosV3 extends javax.swing.JFrame {
         }
     }
     private void GenerarReporteDinamicBtn1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_GenerarReporteDinamicBtn1ActionPerformed
-//        String vencimientosIdConcat = concatenarVencIDUnidad();
-//       
-//
-//        Map parametros = new HashMap();
-//        // Create an ArrayList to store report paths
-//
-//        try {
-//            String q = query1;
-//            System.out.println(q);
-//            JRDesignQuery query = new JRDesignQuery();
-//            query.setText(q);
-//
-//            JasperDesign jd = JRXmlLoader.load("C:\\SERVER\\TransportesRiosExpress\\VencimientoUnidadesDinamico.jrxml");
-//            jd.setQuery(query);
-//            Connection con = utils.startConnection();
-//            JasperReport reporte = (JasperReport) JasperCompileManager.compileReport(jd);
-//
-//            // Fill the report
-//            JasperPrint jasperPrint = JasperFillManager.fillReport(reporte, parametros, con);
-//            utils.windowJasper(jasperPrint);
-//        } catch (JRException ex) {
-//            Logger.getLogger(NuevoArticulo.class.getName()).log(Level.SEVERE, null, ex);
-//            JOptionPane.showMessageDialog(this, "Error " + ex + "\n" + ex.getStackTrace()[0], "Error", JOptionPane.ERROR_MESSAGE);
-//        }
+
         generarReporteUnidadesDinamica();
-// TODO add your handling code here:
     }//GEN-LAST:event_GenerarReporteDinamicBtn1ActionPerformed
     public void ejecutarCargaYarda() {
         cargarColumnasYarda(vencimientosYardasId.get(boxAyuntamiento.getSelectedIndex()));
@@ -6808,7 +6791,8 @@ public class VencimientosV3 extends javax.swing.JFrame {
 
     private void jButton36ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton36ActionPerformed
         if (tvencimientosunidad.getSelectedRow() >= 0) {
-            String vencimientoFijo = utils.dbConsult("select vencimientoFijo from vencimientos_camiones where ID = (select vencimientoID from choferes_vencimientos_camiones cv where cv.ID = '" + vencimientoscamionId.get(tvencimientosunidad.getSelectedRow()) + "') ");
+            String vencimientoFijo = utils.dbConsult("select ifnull(vencimientoFijo,'') from vencimientos_camiones where ID = (select vencimientoID from choferes_vencimientos_camiones cv where cv.ID = '" + vencimientoscamionId.get(tvencimientosunidad.getSelectedRow()) + "') ");
+
             if (vencimientoFijo.equals("0")) {
                 utils.dbUpdate("UPDATE choferes_vencimientos_camiones set deleted=true WHERE ID='" + vencimientoscamionId.get(tvencimientosunidad.getSelectedRow()) + "'");
                 cargarVencimientosUnidad();
@@ -6923,7 +6907,8 @@ public class VencimientosV3 extends javax.swing.JFrame {
 
             JRDesignQuery query = new JRDesignQuery();
             query.setText(q);
-            JasperDesign jd = JRXmlLoader.load("C:\\SERVER\\TransportesRiosExpress\\vencimientosUnidades.jrxml");
+            String reporto = generarRutaReporte() + "vencimientosUnidades.jrxml";
+            JasperDesign jd = JRXmlLoader.load(reporto);
             jd.setQuery(query);
             Connection con = utils.startConnection();
             JasperReport reporte = (JasperReport) JasperCompileManager.compileReport(jd);//(JasperReport) JRLoader.loadObject(new File("Reporte_Transferencias.jasper"));
@@ -7378,7 +7363,7 @@ public class VencimientosV3 extends javax.swing.JFrame {
             while (rs.next()) {
                 resultado = resultado + rs.getString("resultado") + ",";
             }
-            
+
             resultado = quitarComaTxt(resultado);
 
         } catch (SQLException e) {
@@ -7393,15 +7378,15 @@ public class VencimientosV3 extends javax.swing.JFrame {
         }
         return resultado;
     }
-    
-    private String quitarComaTxt(String valor){
-       try{
-          if(valor.isEmpty()){
+
+    private String quitarComaTxt(String valor) {
+        try {
+            if (valor.isEmpty()) {
+                return "";
+            }
+        } catch (NullPointerException e) {
             return "";
-        } 
-       }catch(NullPointerException e){
-         return "";  
-       }
+        }
         return valor.substring(0, valor.length() - 1);
     }
 
@@ -7769,7 +7754,6 @@ public class VencimientosV3 extends javax.swing.JFrame {
     private javax.swing.JPanel jPanel47;
     private javax.swing.JPanel jPanel48;
     private javax.swing.JPanel jPanel49;
-    private javax.swing.JPanel jPanel5;
     private javax.swing.JPanel jPanel50;
     private javax.swing.JPanel jPanel51;
     private javax.swing.JPanel jPanel52;
@@ -7818,7 +7802,6 @@ public class VencimientosV3 extends javax.swing.JFrame {
     private javax.swing.JScrollPane jScrollPane24;
     private javax.swing.JScrollPane jScrollPane25;
     private javax.swing.JScrollPane jScrollPane29;
-    private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JScrollPane jScrollPane30;
     private javax.swing.JScrollPane jScrollPane4;
     private javax.swing.JScrollPane jScrollPane5;
@@ -7829,7 +7812,6 @@ public class VencimientosV3 extends javax.swing.JFrame {
     private javax.swing.JTabbedPane jTabbedPane1;
     private javax.swing.JTable jTable1;
     private javax.swing.JTable jTable2;
-    private javax.swing.JTable jTable3;
     private javax.swing.JTable jTable4;
     private javax.swing.JTable jTable5;
     private javax.swing.JTextField jTextField1;

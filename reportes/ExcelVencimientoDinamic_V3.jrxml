@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="report name" pageWidth="667" pageHeight="842" columnWidth="627" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="9e283d63-7acc-4a0f-a28a-65e6a7afc9a7">
+	<property name="ireport.zoom" value="1.5"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["C:\\SERVER\\TransportesBaliExpress\\"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="nombre" class="java.lang.String"/>
+	<parameter name="tipo" class="java.lang.String"/>
+	<parameter name="vencimientoID" class="java.lang.String"/>
+	<parameter name="dias" class="java.lang.String"/>
+	<parameter name="banderaMuchosVens" class="java.lang.String">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[select NoEmpleado,choferes_tbl.Nombre, DATE_FORMAT(choferes_vencimientos.fecha,'%d.%m.%Y') as venc,
+(select Nombre from tiposchoferes_tbl where tipoID=tipooperador) as tipox,
+(select vencimiento from vencimientos where ID=choferes_vencimientos.vencimientoID) as venx,
+DATEDIFF(choferes_vencimientos.fecha, now()) as dias_venc
+from choferes_tbl
+inner join choferes_vencimientos on choferes_tbl.choferID = choferes_vencimientos.choferID 
+where choferes_tbl.Status = true 
+and IF( $P{banderaMuchosVens}+0>0, vencimientoID in ($P{vencimientoID}), vencimientoID>=0 )
+and NOW()+INTERVAL $P{dias}+0 DAY > choferes_vencimientos.fecha
+and IF( $P{tipo}+0>0, choferes_tbl.Puesto = $P{tipo} , choferes_tbl.choferID>=0 )
+and  choferes_tbl.Nombre like $P{nombre} and choferes_tbl.Puesto != 5
+order by NoEmpleado,
+DATEDIFF(choferes_vencimientos.fecha, now()) desc]]>
+	</queryString>
+	<field name="NoEmpleado" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="Nombre" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="venc" class="java.lang.String"/>
+	<field name="tipox" class="java.lang.String"/>
+	<field name="venx" class="java.lang.String"/>
+	<field name="dias_venc" class="java.lang.Integer"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="54" splitType="Stretch">
+			<staticText>
+				<reportElement x="1" y="0" width="384" height="54" uuid="fd035650-28a7-4ffe-b853-5dcb28b7692f"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle" markup="none">
+					<font size="25" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Vencimientos]]></text>
+			</staticText>
+			<textField pattern="dd/MM/yyyy">
+				<reportElement x="423" y="0" width="204" height="54" uuid="ac1cb2dd-ade5-4600-b6ae-f4ba006637a3"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="20" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<columnHeader>
+		<band height="34" splitType="Stretch">
+			<textField pattern="" isBlankWhenNull="false">
+				<reportElement mode="Opaque" x="50" y="14" width="275" height="20" forecolor="#FFFFFF" backcolor="#333333" uuid="e7d0ec05-7a41-4495-b056-b36133a97409"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" markup="none">
+					<font fontName="SansSerif" size="9" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+					<paragraph lineSpacing="Single"/>
+				</textElement>
+				<textFieldExpression><![CDATA["NOMBRE"]]></textFieldExpression>
+			</textField>
+			<textField pattern="" isBlankWhenNull="false">
+				<reportElement mode="Opaque" x="325" y="14" width="125" height="20" forecolor="#FFFFFF" backcolor="#333333" uuid="4deb224e-2df4-4c2d-b6d9-1676b9c88cae"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" markup="none">
+					<font fontName="SansSerif" size="9" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+					<paragraph lineSpacing="Single"/>
+				</textElement>
+				<textFieldExpression><![CDATA["EXPIRACION"]]></textFieldExpression>
+			</textField>
+			<textField pattern="" isBlankWhenNull="false">
+				<reportElement mode="Opaque" x="0" y="14" width="50" height="20" forecolor="#FFFFFF" backcolor="#333333" uuid="162cf1a1-eda4-495b-8906-875ab4981b09"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" markup="none">
+					<font fontName="SansSerif" size="9" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+					<paragraph lineSpacing="Single"/>
+				</textElement>
+				<textFieldExpression><![CDATA["NO EMP"]]></textFieldExpression>
+			</textField>
+			<textField pattern="" isBlankWhenNull="false">
+				<reportElement mode="Opaque" x="577" y="14" width="50" height="20" forecolor="#FFFFFF" backcolor="#333333" uuid="a77742bf-d204-43ac-8979-3a9946afa5c8"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" markup="none">
+					<font fontName="SansSerif" size="9" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+					<paragraph lineSpacing="Single"/>
+				</textElement>
+				<textFieldExpression><![CDATA["DIAS"]]></textFieldExpression>
+			</textField>
+			<textField pattern="" isBlankWhenNull="false">
+				<reportElement mode="Opaque" x="450" y="14" width="127" height="20" forecolor="#FFFFFF" backcolor="#333333" uuid="f2b904fd-d8ad-4264-b4de-453e3e86da4a"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" markup="none">
+					<font fontName="SansSerif" size="9" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+					<paragraph lineSpacing="Single"/>
+				</textElement>
+				<textFieldExpression><![CDATA["VENCIMIENTO"]]></textFieldExpression>
+			</textField>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="20" splitType="Stretch">
+			<textField isBlankWhenNull="true">
+				<reportElement x="50" y="0" width="275" height="20" uuid="18ab72c3-ceac-43c5-89bd-888d2c930b27"/>
+				<box>
+					<pen lineWidth="0.75"/>
+					<topPen lineWidth="0.75"/>
+					<leftPen lineWidth="0.75"/>
+					<bottomPen lineWidth="0.75"/>
+					<rightPen lineWidth="0.75"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{Nombre}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="325" y="0" width="125" height="20" uuid="b95c8315-5b36-4431-b82c-a06adac0a0e3"/>
+				<box>
+					<pen lineWidth="0.75"/>
+					<topPen lineWidth="0.75"/>
+					<leftPen lineWidth="0.75"/>
+					<bottomPen lineWidth="0.75"/>
+					<rightPen lineWidth="0.75"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{venc}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="0" y="0" width="50" height="20" uuid="3cdfe25c-89a3-45f0-a629-5b4a527041b9"/>
+				<box>
+					<pen lineWidth="0.75"/>
+					<topPen lineWidth="0.75"/>
+					<leftPen lineWidth="0.75"/>
+					<bottomPen lineWidth="0.75"/>
+					<rightPen lineWidth="0.75"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{NoEmpleado}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="577" y="0" width="50" height="20" uuid="0ed86940-35db-4415-a921-f484ed9b70b7"/>
+				<box>
+					<pen lineWidth="0.75"/>
+					<topPen lineWidth="0.75"/>
+					<leftPen lineWidth="0.75"/>
+					<bottomPen lineWidth="0.75"/>
+					<rightPen lineWidth="0.75"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{dias_venc}]]></textFieldExpression>
+			</textField>
+			<textField pattern="dd/MM/yyyy" isBlankWhenNull="true">
+				<reportElement x="450" y="0" width="127" height="20" uuid="fad3e1b4-f3e7-494e-8d0e-bb973af76635"/>
+				<box>
+					<pen lineWidth="0.75"/>
+					<topPen lineWidth="0.75"/>
+					<leftPen lineWidth="0.75"/>
+					<bottomPen lineWidth="0.75"/>
+					<rightPen lineWidth="0.75"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="10" isBold="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{venx}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+</jasperReport>
